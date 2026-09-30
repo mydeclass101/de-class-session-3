@@ -133,7 +133,7 @@ ORDER BY c.customer_id, o.ordered_at;           -- 👀 ปิยะ (CUS-000000
 --ลอง inner join หน่อย
 SELECT c.customer_code, c.name, o.order_number, o.status
 FROM customers c
-LEFT JOIN orders o ON o.customer_id = c.customer_id
+JOIN orders o ON o.customer_id = c.customer_id
 ORDER BY c.customer_id, o.ordered_at;
 
 
