@@ -38,7 +38,7 @@ docker compose ps                   # STATUS ต้องเป็น (healthy)
 | Driver properties | `allowPublicKeyRetrieval` = `true`, `useSSL` = `false` |
 
 สิทธิ์ของ user `student`
-- `ecommerce`: อ่านได้อย่างเดียว (ข้อมูลร้านค้า ใช้ตั้งแต่บทที่ 6)
+- `ecommerce`: อ่านได้อย่างเดียว (ข้อมูลร้านค้า ใช้ในบทที่ 7–9)
 - `lab_<ชื่อ>`: ทำได้ทุกอย่าง สร้างของตัวเองในบทที่ 0 เช่น `lab_somchai`
 
 > ถ้าเครื่องมี MySQL ติดตั้งอยู่แล้ว (port 3306 ถูกใช้) ให้คัดลอก `.env.example` เป็น `.env` แล้วแก้ `MYSQL_PORT=3307`
@@ -48,7 +48,7 @@ docker compose ps                   # STATUS ต้องเป็น (healthy)
 
 ```
 lessons/        ไฟล์ SQL บทเรียน (รันใน DBeaver ทีละคำสั่งด้วย Ctrl+Enter)
-assignments/    โจทย์การบ้าน A1–A5 (+ ไฟล์ seed ที่โจทย์บอกให้รันก่อน)
+assignments/    โจทย์การบ้าน A1–A3 + แบบฝึกหัดเสริม A4 (+ ไฟล์ seed ที่โจทย์บอกให้รันก่อน)
 work/           ที่ทำงานของเราเอง (git ไม่สนใจโฟลเดอร์นี้)
 data/           ไฟล์ข้อมูล + data steps (ไม่ต้องแก้)
 scripts/        advance.sh ทำให้ข้อมูลเดินหน้า
@@ -56,6 +56,8 @@ scripts/        advance.sh ทำให้ข้อมูลเดินหน�
 
 **คัดลอกไฟล์บทเรียนไปไว้ใน `work/` ก่อนแก้** (เช่นแก้ `USE lab_student;` เป็นชื่อตัวเอง)
 เวลาผู้สอนเพิ่มบทเรียนใหม่ จะได้ `git pull` ได้โดยไม่ชนกับไฟล์ที่เราแก้
+
+**เนื้อหาในคลาส (บทที่ 0–6)** ใช้ข้อมูลที่สร้างเองใน `lab_` ของเรา
 
 | # | ไฟล์ | หัวข้อ | การบ้าน |
 |---|---|---|---|
@@ -65,15 +67,20 @@ scripts/        advance.sh ทำให้ข้อมูลเดินหน�
 | 3 | `03_select_basics.sql` | SELECT, WHERE, ORDER BY, ฟังก์ชัน, CASE, NULL | |
 | 4 | `04_aggregate_groupby.sql` | COUNT/SUM/AVG, GROUP BY, HAVING | **A2** |
 | 5 | `05_relations_joins.sql` | PK/FK, INNER/LEFT JOIN, anti-join, fan-out, UNION | **A3** |
-| 6 | `06_explore_real_data.sql` | สำรวจ schema จริง, lifecycle ของ 1 order | |
-| 7 | `07_subquery_cte_window.sql` | Subquery, CTE, window functions, date spine | **A4** |
+| 6 | `06_subquery_cte_window.sql` | Subquery, CTE, window functions, date spine | |
+
+**ศึกษาต่อเอง (บทที่ 7–9)** ไม่ได้สอนในคลาส ใช้ข้อมูลจริงใน `ecommerce`
+
+| # | ไฟล์ | หัวข้อ | แบบฝึกหัด |
+|---|---|---|---|
+| 7 | `07_explore_real_data.sql` | สำรวจ schema จริง, lifecycle ของ 1 order | A4 (ไม่บังคับ) |
 | 8 | `08_de_load_patterns.sql` | CTAS, INSERT…SELECT, UPSERT, incremental watermark, dedup | |
-| 9 | `09_modeling_quality_performance.sql` | View, SCD Type 2, data quality, index + EXPLAIN | **A5** |
+| 9 | `09_modeling_quality_performance.sql` | View, SCD Type 2, data quality, index + EXPLAIN | |
 
 สัญลักษณ์ในไฟล์บทเรียน: `-- ❌` = คำสั่งที่ตั้งใจให้ error (ลบ `-- ` แล้วลองรัน), `💡` = ประเด็นที่ Data Engineer ต้องรู้,
 `⚠️` = ความผิดพลาดที่พบบ่อย
 
-## ทำให้ข้อมูลเดินหน้า (บทที่ 8 และ A5)
+## ทำให้ข้อมูลเดินหน้า (บทที่ 8, ศึกษาเอง)
 
 ระบบจริงมี order ใหม่และสถานะเปลี่ยนตลอดเวลา เราจำลองได้ด้วย **data step** ที่เตรียมไว้
 (1 step = ข้อมูลเดินหน้า 1–2 วัน: order ใหม่, order เก่าเปลี่ยนสถานะ, การจ่ายเงิน, การจัดส่ง ฯลฯ)

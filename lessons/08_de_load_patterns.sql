@@ -1,5 +1,5 @@
 -- =====================================================================
---  บทที่ 8: รูปแบบการโหลดข้อมูลของ Data Engineer (DDL + DML ในงาน pipeline)
+--  บทที่ 8: รูปแบบการโหลดข้อมูลของ Data Engineer (DDL + DML ในงาน pipeline)   📖 ศึกษาต่อเอง
 --  อ่านจาก ecommerce (source) → เขียนลง lab_ ของตัวเอง (target / warehouse)
 --
 --   8.1 CTAS vs explicit DDL              8.5 Incremental load ด้วย watermark ⭐

@@ -1,5 +1,5 @@
 -- =====================================================================
---  บทที่ 9: View · SCD Type 2 · Data Quality checks · Index & EXPLAIN
+--  บทที่ 9: View · SCD Type 2 · Data Quality checks · Index & EXPLAIN   📖 ศึกษาต่อเอง
 -- =====================================================================
 USE lab_student;   -- ⚠️ แก้เป็น database ของตัวเอง
 -- ต้องรันบทที่ 8 มาก่อน (ใช้ dim_product, dim_customer, stg_orders)
@@ -200,4 +200,3 @@ DROP TABLE perf_orders;
 --   VIEW · SCD Type 2 (ปิดแถวเก่า + เปิดแถวใหม่, point-in-time query)
 --   DQ checks: completeness / accuracy / uniqueness / not null / referential / validity / freshness
 --   EXPLAIN / EXPLAIN ANALYZE · index เดี่ยว / composite · อย่าห่อคอลัมน์ด้วยฟังก์ชัน
---   ➡️ ทำ Assignment A5

@@ -12,7 +12,7 @@ SELECT CURRENT_USER() AS who_am_i, VERSION() AS mysql_version, NOW() AS server_t
 
 -- 2) database ที่เรามองเห็น
 SHOW DATABASES;
---    ecommerce   = ข้อมูลร้านค้าออนไลน์จริง (อ่านได้อย่างเดียว) ใช้ตั้งแต่บทที่ 6
+--    ecommerce   = ข้อมูลร้านค้าออนไลน์จริง (อ่านได้อย่างเดียว) ใช้ในบทที่ 7–9
 --    lab_xxx     = sandbox ของแต่ละคน ทำอะไรก็ได้
 
 -- 3) สร้าง database ของตัวเอง

@@ -33,19 +33,21 @@ INSERT INTO members (member_code, name, province, points, joined_date) VALUES
     ('MEM-0004', 'นภา ศรีสุข',    'ภูเก็ต',     450, '2026-02-14'),
     ('MEM-0005', 'ธนพล ทองดี',    'ชลบุรี',     230, '2026-03-01');
 
--- ไม่ระบุคอลัมน์ที่มี default → ใช้ default
-INSERT INTO members (member_code, name, joined_date) VALUES ('MEM-0006', 'ปิยะ บุญมา', '2026-03-05');
-
-SELECT * FROM members;
 
 -- ---------------------------------------------------------------------
 -- 2.2 UPDATE: ⚠️ ต้องมี WHERE เสมอ ไม่งั้นแก้ "ทุกแถว"
 -- ---------------------------------------------------------------------
 UPDATE members
+SET tier = 'silver'  
+
+UPDATE members
 SET points = points + 50            -- คำนวณจากค่าเดิมได้
 
 -- 💡 เทคนิค: เขียน SELECT ด้วย WHERE เดียวกันก่อน ดูว่าโดนกี่แถว แล้วค่อยเปลี่ยนเป็น UPDATE
 SELECT * FROM members WHERE member_code = 'MEM-0003';
+
+SELECT * FROM members WHERE points < 250;
+
 
 UPDATE members
 SET points = points + 50            -- คำนวณจากค่าเดิมได้
@@ -56,15 +58,25 @@ UPDATE members
 SET tier = 'silver'
 WHERE points >= 200;
 
+
+-- CASE WHEN 
+SELECT
+    member_code,
+    tier,
+    points,
+    CASE WHEN points >= 400 THEN 'gold'
+        WHEN points >= 200 THEN 'silver'
+        ELSE 'bronze' 
+    END AS new_tier
+FROM members;
+
+
 -- UPDATE ด้วยเงื่อนไขแบบ CASE (อัปเดต tier ใหม่ทั้งหมดในคำสั่งเดียว)
 UPDATE members
 SET tier = CASE WHEN points >= 400 THEN 'gold'
                 WHEN points >= 200 THEN 'silver'
                 ELSE 'bronze' END
-WHERE member_id > 0;                -- WHERE ที่ครอบทุกแถว (บาง tool บังคับให้มี WHERE)
 
-SELECT member_code, points, tier, created_at, updated_at FROM members;
--- 👀 สังเกต updated_at ของแถวที่ถูกแก้ จะใหม่กว่า created_at (ถ้ารันห่างกันเกิน 1 วินาที)
 
 -- ---------------------------------------------------------------------
 -- 2.3 DELETE: ⚠️ ต้องมี WHERE เสมอเช่นกัน

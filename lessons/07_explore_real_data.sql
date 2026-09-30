@@ -1,5 +1,5 @@
 -- =====================================================================
---  บทที่ 6: ข้อมูลจริง: สำรวจ source ใหม่แบบ Data Engineer
+--  บทที่ 7: ข้อมูลจริง: สำรวจ source ใหม่แบบ Data Engineer   📖 ศึกษาต่อเอง (ไม่ได้สอนในคลาส)
 --  database ecommerce: ร้านค้าออนไลน์ 25 ตาราง, หลายล้านแถว, อ่านได้อย่างเดียว
 --  💡 เป็นแค่ "mini shop บทที่ 5" เวอร์ชันใหญ่: customers / products / orders / order_items / payments
 -- =====================================================================
@@ -9,42 +9,7 @@ USE ecommerce;
 --   1) ใส่ LIMIT เวลาดูตัวอย่าง    2) กรองช่วงเวลาเมื่อทำได้    3) ห้าม SELECT * ใน pipeline
 
 -- ---------------------------------------------------------------------
--- 6.1 มีตารางอะไรบ้าง ใหญ่แค่ไหน
--- ---------------------------------------------------------------------
-SHOW TABLES;
-
-SELECT table_name,
-       table_rows                                        AS approx_rows,   -- ค่าประมาณ (เร็ว)
-       ROUND((data_length + index_length) / 1024 / 1024) AS size_mb,
-       table_comment
-FROM information_schema.tables
-WHERE table_schema = 'ecommerce'
-ORDER BY table_rows DESC;
-
--- นับจริง (ช้ากว่า แต่แม่นยำ)
-SELECT (SELECT COUNT(*) FROM customers)   AS customers,
-       (SELECT COUNT(*) FROM products)    AS products,
-       (SELECT COUNT(*) FROM orders)      AS orders,
-       (SELECT COUNT(*) FROM order_items) AS order_items;
-
--- ---------------------------------------------------------------------
--- 6.2 โครงสร้างและความสัมพันธ์ (ER diagram จาก metadata)
--- ---------------------------------------------------------------------
-DESCRIBE orders;
-
--- Foreign keys ทั้งหมด: ตารางไหนอ้างอิงตารางไหน
-SELECT table_name, column_name, referenced_table_name, referenced_column_name
-FROM information_schema.key_column_usage
-WHERE table_schema = 'ecommerce' AND referenced_table_name IS NOT NULL
-ORDER BY table_name;
-
--- ค่าที่เป็นไปได้ของคอลัมน์สถานะ (ดูจาก CHECK constraint)
-SELECT constraint_name, check_clause
-FROM information_schema.check_constraints
-WHERE constraint_schema = 'ecommerce' AND constraint_name LIKE 'ck_orders%';
-
--- ---------------------------------------------------------------------
--- 6.3 ดูตัวอย่างข้อมูล + ทำความเข้าใจ business key
+-- 7.1 ดูตัวอย่างข้อมูล + ทำความเข้าใจ business key
 -- ---------------------------------------------------------------------
 SELECT customer_id, customer_code, first_name, last_name, membership_tier, status, registered_at
 FROM customers ORDER BY customer_id LIMIT 5;
@@ -63,7 +28,7 @@ JOIN brands b       ON b.brand_id = p.brand_id
 LIMIT 10;
 
 -- ---------------------------------------------------------------------
--- 6.4 Profiling: เข้าใจรูปร่างข้อมูลก่อนเขียน pipeline
+-- 7.2 Profiling: เข้าใจรูปร่างข้อมูลก่อนเขียน pipeline
 -- ---------------------------------------------------------------------
 -- ช่วงเวลาและความสดของข้อมูล (freshness)
 SELECT MIN(ordered_at) AS first_order, MAX(ordered_at) AS last_order, MAX(updated_at) AS last_change
@@ -85,7 +50,7 @@ FROM orders;
 SELECT customer_code, COUNT(*) FROM customers GROUP BY customer_code HAVING COUNT(*) > 1;
 
 -- ---------------------------------------------------------------------
--- 6.5 ชีวิตของ 1 order: ข้อมูลกระจายอยู่ใน 7 ตาราง
+-- 7.3 ชีวิตของ 1 order: ข้อมูลกระจายอยู่ใน 7 ตาราง
 -- ---------------------------------------------------------------------
 -- เลือก order ที่คืนสินค้า (มีครบทุกขั้นตอน)
 SET @oid = (SELECT order_id FROM orders WHERE status = 'returned' AND return_reason IS NOT NULL ORDER BY order_id LIMIT 1);
@@ -116,7 +81,7 @@ SELECT refund_code, amount, reason, status, requested_at, processed_at FROM refu
 --   → สองแบบนี้ต้องใช้วิธีโหลดต่างกัน (บทที่ 8)
 
 -- ---------------------------------------------------------------------
--- 6.6 คำถามธุรกิจแรก ๆ (ใช้ความรู้บทที่ 3-5 ทั้งหมด)
+-- 7.4 คำถามธุรกิจแรก ๆ (ใช้ความรู้บทที่ 3-6 ทั้งหมด)
 -- ---------------------------------------------------------------------
 -- ยอดขายรายเดือน (ไม่นับยกเลิก)
 SELECT DATE_FORMAT(ordered_at, '%Y-%m') AS month,
@@ -147,6 +112,6 @@ WHERE o.ordered_at >= '2026-01-01'
 GROUP BY pr.region
 ORDER BY orders DESC;
 
--- สรุปบทที่ 6
+-- สรุปบทที่ 7
 --   information_schema (tables, columns, key_column_usage, check_constraints) · profiling
 --   business key vs surrogate key · state table vs event table · 1 business event กระจายหลายตาราง

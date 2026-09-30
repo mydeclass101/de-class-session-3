@@ -55,7 +55,6 @@ SELECT name, category FROM menu WHERE category IN ('tea', 'bakery');
 SELECT name FROM menu WHERE category <> 'coffee';                    -- ไม่เท่ากับ
 SELECT name FROM menu WHERE name LIKE 'C%';                          -- ขึ้นต้นด้วย C
 SELECT name FROM menu WHERE name LIKE '%ชา%';                        -- มีคำว่า ชา
-SELECT sku FROM menu WHERE sku LIKE '___-___-00_';                   -- _ = อักขระ 1 ตัว
 SELECT name, launched_date FROM menu WHERE launched_date >= '2025-06-01';
 
 -- AND / OR: ⚠️ AND ทำก่อน OR เสมอ ใส่วงเล็บให้ชัด
@@ -70,8 +69,6 @@ WHERE (category = 'coffee' OR category = 'tea') AND price > 70;      -- ✅ ต�
 SELECT name, note FROM menu WHERE note = NULL;        -- ❌ ได้ 0 แถวเสมอ! NULL = NULL ไม่ใช่ TRUE
 SELECT name, note FROM menu WHERE note IS NULL;       -- ✅
 SELECT name, note FROM menu WHERE note IS NOT NULL;
-
-SELECT NULL = NULL AS eq, NULL + 1 AS plus, 'a' = NULL AS cmp;       -- ทุกอย่างที่เจอ NULL = NULL
 
 SELECT name,
        COALESCE(note, '-')                          AS note_display, -- แทน NULL ด้วยค่าอื่น
@@ -88,9 +85,7 @@ SELECT name FROM menu WHERE note NOT IN ('เลิกขาย') OR note IS NUL
 SELECT name, price FROM menu ORDER BY price DESC;                    -- แพงสุดก่อน
 SELECT name, category, price FROM menu ORDER BY category, price DESC;-- เรียงหลายชั้น
 SELECT name, price FROM menu ORDER BY price DESC LIMIT 3;            -- top 3
-SELECT name, price FROM menu ORDER BY price DESC LIMIT 3 OFFSET 3;   -- อันดับ 4-6 (แบ่งหน้า)
 SELECT DISTINCT category FROM menu;                                  -- ค่าไม่ซ้ำ
-SELECT DISTINCT category, stock > 0 AS in_stock FROM menu ORDER BY category;
 
 -- ⚠️ ไม่มี ORDER BY = ไม่รับประกันลำดับ แม้ผลดูเหมือนเรียงอยู่แล้วก็ตาม
 
@@ -100,17 +95,11 @@ SELECT DISTINCT category, stock > 0 AS in_stock FROM menu ORDER BY category;
 -- ข้อความ
 SELECT sku,
        LEFT(sku, 3)                     AS category_code,     -- 'COF'
-       SUBSTRING_INDEX(sku, '-', -1)    AS running_no,        -- ส่วนสุดท้ายหลัง '-'
+       SUBSTRING(sku, 1, 3)    AS running_no,
        UPPER(name)                      AS upper_name,
        CONCAT(name, ' (', category, ')') AS label,
-       CHAR_LENGTH(name)                AS n_chars,           -- จำนวนตัวอักษร
-       LENGTH(name)                     AS n_bytes,           -- จำนวน byte (ภาษาไทย 1 ตัว = 3 byte!)
        TRIM('  ชาไทย  ')                 AS trimmed,
        REPLACE(sku, '-', '')            AS sku_no_dash
-FROM menu;
-
--- ตัวเลข
-SELECT price, ROUND(price * 1.07, 2) AS with_vat, FLOOR(price / 7) AS f, CEIL(price / 7) AS c, MOD(stock, 12) AS m
 FROM menu;
 
 -- วันเวลา
@@ -118,7 +107,6 @@ SELECT name,
        launched_date,
        YEAR(launched_date)                       AS y,
        MONTH(launched_date)                      AS m,
-       DATE_FORMAT(launched_date, '%Y-%m')       AS year_month,
        DAYNAME(launched_date)                    AS weekday,
        DATEDIFF('2026-09-01', launched_date)     AS days_on_menu,
        DATE_ADD(launched_date, INTERVAL 30 DAY)  AS promo_end,
@@ -149,17 +137,18 @@ SELECT name,
        price,
        CASE WHEN price >= 90 THEN 'premium'
             WHEN price >= 60 THEN 'regular'
-            WHEN price >= 30 THEN 'eco'
-            ELSE 'value' END                                    AS price_tier,
+            WHEN price >= 30 THEN 'basic'
+            ELSE 'value' END                                    AS price_tier
 FROM menu
 ORDER BY price DESC;
 
+
 SELECT name,
        price,
-       CASE WHEN price >= 30 THEN 'eco'
+       CASE WHEN price >= 30 THEN 'basic'
+	       	WHEN price >= 90 THEN 'premium'
             WHEN price >= 60 THEN 'regular'
-            WHEN price >= 90 THEN 'premium'
-            ELSE 'value' END                                    AS price_tier,
+            ELSE 'value' END                                    AS price_tier
 FROM menu
 ORDER BY price DESC;
 
@@ -167,10 +156,10 @@ ORDER BY price DESC;
 
 SELECT name,
        price,
-       CASE WHEN price BETWEEN 30 AND 59 THEN 'eco'
+       CASE WHEN price BETWEEN 30 AND 59 THEN 'basic'
             WHEN price BETWEEN 60 AND 89 THEN 'regular'
             WHEN price >= 90 THEN 'premium'
-            ELSE 'value' END                                    AS price_tier,
+            ELSE 'value' END                                    AS price_tier
 FROM menu
 ORDER BY price DESC;
 

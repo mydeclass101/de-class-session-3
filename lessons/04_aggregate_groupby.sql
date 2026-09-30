@@ -80,12 +80,6 @@ FROM sales
 GROUP BY DATE(sold_at)
 ORDER BY sale_date;
 
-SELECT CASE WHEN HOUR(sold_at) < 11 THEN '1) เช้า' WHEN HOUR(sold_at) < 14 THEN '2) กลางวัน' ELSE '3) บ่าย' END AS daypart,
-       COUNT(*) AS n_bills
-FROM sales
-GROUP BY daypart
-ORDER BY daypart;
-
 -- ⚠️ ทุกคอลัมน์ใน SELECT ต้องอยู่ใน GROUP BY หรืออยู่ใน aggregate function
 -- ❌ SELECT branch, sku, SUM(qty) FROM sales GROUP BY branch;    -- sku มีหลายค่าต่อสาขา จะเอาค่าไหน? → error (ONLY_FULL_GROUP_BY)
 
