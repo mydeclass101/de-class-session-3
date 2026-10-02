@@ -77,7 +77,7 @@ ORDER BY branch, units DESC;
 -- group ตามค่าที่คำนวณ (วัน / ชั่วโมง)
 SELECT DATE(sold_at) AS sale_date, COUNT(*) AS n_bills, SUM(qty * unit_price) AS revenue
 FROM sales
-GROUP BY DATE(sold_at)
+GROUP BY sale_date
 ORDER BY sale_date;
 
 -- ⚠️ ทุกคอลัมน์ใน SELECT ต้องอยู่ใน GROUP BY หรืออยู่ใน aggregate function
@@ -127,6 +127,18 @@ FROM sales
 GROUP BY DATE(sold_at), branch;
 
 SELECT * FROM daily_branch_sales ORDER BY sale_date, branch;
+
+
+CREATE OR REPLACE VIEW v_daily_sales_report AS
+SELECT
+    DATE(sold_at) AS sold_date,
+    branch,
+    COUNT(*) AS total_transactions,
+    SUM(qty * unit_price) AS total_sales
+FROM sales
+GROUP BY
+    DATE(sold_at),
+    branch;
 -- ❓ ถ้ารัน INSERT ข้างบนซ้ำจะเกิดอะไร? (ลองดู: duplicate key) บทที่ 8 จะสอนทำให้รันซ้ำได้
 
 -- สรุปบทที่ 4

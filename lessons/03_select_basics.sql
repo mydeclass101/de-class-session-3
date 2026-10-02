@@ -38,30 +38,34 @@ SELECT * FROM menu;                                   -- ⚠️ ใช้แค�
 
 SELECT sku, name, price FROM menu;
 
-SELECT name,
-       price,
-       cost,
-       price - cost                          AS profit,
-       ROUND((price - cost) / price * 100, 1) AS margin_pct
-FROM menu;
+select 
+	sku, 
+	name, 
+	price,
+	cost,
+	price - cost AS profit,
+	ROUND(((price - cost) / price) * 100, 2) AS margin_percent,
+	'THB' AS currency
+from menu
 
 -- ---------------------------------------------------------------------
 -- 3.2 WHERE: กรองแถว
 -- ---------------------------------------------------------------------
-SELECT name, price FROM menu WHERE category = 'coffee';
-SELECT name, price FROM menu WHERE price > 70;
-SELECT name, price FROM menu WHERE price BETWEEN 55 AND 65;          -- รวมขอบ 55 และ 65
-SELECT name, category FROM menu WHERE category IN ('tea', 'bakery');
-SELECT name FROM menu WHERE category <> 'coffee';                    -- ไม่เท่ากับ
-SELECT name FROM menu WHERE name LIKE 'C%';                          -- ขึ้นต้นด้วย C
-SELECT name FROM menu WHERE name LIKE '%ชา%';                        -- มีคำว่า ชา
-SELECT name, launched_date FROM menu WHERE launched_date >= '2025-06-01';
+SELECT * FROM menu WHERE category = 'coffee';
+SELECT * FROM menu WHERE category <> 'coffee';   
+SELECT * FROM menu WHERE category IN ('tea', 'bakery');
+SELECT * FROM menu WHERE price > 70;
+SELECT * FROM menu WHERE price BETWEEN 55 AND 65;          -- รวมขอบ 55 และ 65
+SELECT * FROM menu WHERE name LIKE 'C%';                          -- ขึ้นต้นด้วย C
+SELECT * FROM menu WHERE name LIKE '%nut%';                        -- มีคำว่า ชา
+SELECT * FROM menu WHERE launched_date >= '2025-06-01';
 
 -- AND / OR: ⚠️ AND ทำก่อน OR เสมอ ใส่วงเล็บให้ชัด
-SELECT name, category, price FROM menu
-WHERE category = 'coffee' OR category = 'tea' AND price > 70;        -- ❓ ได้ Espresso ด้วย ทำไม?
-SELECT name, category, price FROM menu
-WHERE (category = 'coffee' OR category = 'tea') AND price > 70;      -- ✅ ตั้งใจแบบนี้
+SELECT * from menu 
+where category IN ('coffee', 'tea') AND price >= 70 
+
+SELECT * from menu 
+WHERE (category = 'coffee' AND cost < 15) OR category  = 'merch'
 
 -- ---------------------------------------------------------------------
 -- 3.3 NULL: "ไม่รู้ค่า" ไม่ใช่ 0 และไม่ใช่ข้อความว่าง
@@ -95,7 +99,7 @@ SELECT DISTINCT category FROM menu;                                  -- ค่�
 -- ข้อความ
 SELECT sku,
        LEFT(sku, 3)                     AS category_code,     -- 'COF'
-       SUBSTRING(sku, 1, 3)    AS running_no,
+       SUBSTRING(sku, 5, 3)    AS running_no,
        UPPER(name)                      AS upper_name,
        CONCAT(name, ' (', category, ')') AS label,
        TRIM('  ชาไทย  ')                 AS trimmed,
@@ -114,7 +118,7 @@ SELECT name,
 FROM menu;
 
 SELECT CURRENT_DATE AS today, NOW() AS now_, CAST('2026-03-15 13:45:00' AS DATE) AS only_date;
-
+select DATE_ADD(CURRENT_DATE, INTERVAL -1 DAY) 
 -- ---------------------------------------------------------------------
 -- 3.6 CASE WHEN: สร้างคอลัมน์ตามเงื่อนไข (ใช้บ่อยมากตอนทำ business rule)
 -- ---------------------------------------------------------------------

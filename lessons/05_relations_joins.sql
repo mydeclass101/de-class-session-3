@@ -2,11 +2,13 @@
 --  บทที่ 5: หลายตาราง: Primary/Foreign key และ JOIN
 --  ข้อมูล: "mini shop" 5 ตาราง ออกแบบให้ "หน้าตาเหมือนข้อมูลจริง" ใน ecommerce (บทที่ 7)
 --    customers ─< orders ─< order_items >─ products
+--                   │          └─< item_returns
 --                   └─< payments
 -- =====================================================================
 USE lab_student;   -- ⚠️ แก้เป็น database ของตัวเอง
 
 -- ลบตามลำดับ "ลูก → แม่" (ตารางที่ถูกอ้างอิงลบทีหลัง)
+DROP TABLE IF EXISTS item_returns;
 DROP TABLE IF EXISTS payments;
 DROP TABLE IF EXISTS order_items;
 DROP TABLE IF EXISTS orders;
@@ -63,6 +65,16 @@ CREATE TABLE payments (
     CONSTRAINT fk_payments_order FOREIGN KEY (order_id) REFERENCES orders (order_id) ON DELETE CASCADE
 );
 
+CREATE TABLE item_returns (                              -- คืนสินค้า "รายบรรทัด" ของ order
+    return_id    INT          NOT NULL PRIMARY KEY,
+    order_id     INT          NOT NULL,
+    line_number  INT          NOT NULL,
+    quantity     INT          NOT NULL CHECK (quantity > 0),
+    reason       VARCHAR(50)  NOT NULL,
+    CONSTRAINT fk_returns_item FOREIGN KEY (order_id, line_number)          -- composite foreign key
+        REFERENCES order_items (order_id, line_number) ON DELETE CASCADE    -- ต้องอ้าง "ครบทั้ง 2 คอลัมน์" ของ PK
+);
+
 -- ---------------------------------------------------------------------
 -- 5.2 Seed data (ใส่ "แม่" ก่อน "ลูก")
 -- ---------------------------------------------------------------------
@@ -109,33 +121,52 @@ INSERT INTO payments VALUES
  (6, 105, 1, 'cod',       3990, 'pending'),
  (7, 106, 1, 'promptpay', 290,  'success');
 
+INSERT INTO item_returns VALUES
+ (1, 101, 1, 1, 'สายชาร์จชำรุด'),               -- order 101 บรรทัด 1 (สายชาร์จ 1 ใน 2 เส้น)
+ (2, 104, 3, 1, 'แพ้ครีม'),                      -- order 104 บรรทัด 3 (ครีมกันแดด)
+ (3, 104, 1, 1, 'ไซส์ไม่พอดี'),                  -- order 104 ซ้ำ แต่คนละบรรทัด (เสื้อยืด)
+ (4, 102, 1, 1, 'สินค้าหมดอายุ'),                -- บรรทัด 1 ซ้ำ แต่คนละ order (ครีมกันแดด)
+ (5, 106, 1, 1, 'ไม่ตรงปก');                     -- บรรทัด 1 ซ้ำอีก (สายชาร์จ)
+-- 👀 order_id ซ้ำได้ (104 ×2) · line_number ซ้ำได้ (1 ×4) · แต่ "คู่" (order_id, line_number) ไม่ซ้ำเลย
+
 -- Foreign key ทำงาน:
 -- ❌ INSERT INTO orders VALUES (108, 'ORD-260311-000001', 99, '2026-03-11 10:00', 'completed');   -- ไม่มีลูกค้า id 99
 -- ❌ DELETE FROM customers WHERE customer_id = 1;                                                  -- ลูกค้ามี order อยู่ (RESTRICT)
 -- ❌ INSERT INTO order_items VALUES (101, 3, 77, 1, 10);                                           -- ไม่มีสินค้า id 77
+-- ❌ INSERT INTO item_returns VALUES (3, 102, 2, 1, 'test');                                        -- order 102 ไม่มีบรรทัด 2 (FK เช็คคู่ order_id + line_number)
 
 -- ---------------------------------------------------------------------
--- 5.3 INNER JOIN: เอาเฉพาะแถวที่ "จับคู่ได้" ทั้งสองฝั่ง
--- ---------------------------------------------------------------------
-SELECT o.order_number, o.ordered_at, o.status, c.customer_code, c.name, c.province
-FROM orders o                                   -- o, c = alias ของตาราง
-JOIN customers c ON c.customer_id = o.customer_id
-ORDER BY o.ordered_at;
-
--- ---------------------------------------------------------------------
--- 5.4 LEFT JOIN: เก็บทุกแถวฝั่งซ้าย ฝั่งขวาไม่เจอ = NULL
+-- 5.3 LEFT JOIN: เก็บทุกแถวฝั่งซ้าย ฝั่งขวาไม่เจอ = NULL
 -- ---------------------------------------------------------------------
 SELECT c.customer_code, c.name, o.order_number, o.status
 FROM customers c
 LEFT JOIN orders o ON o.customer_id = c.customer_id
 ORDER BY c.customer_id, o.ordered_at;           -- 👀 ปิยะ (CUS-0000006) ขึ้นมาด้วย แต่ order เป็น NULL
 
---ลอง inner join หน่อย
+-- ---------------------------------------------------------------------
+-- 5.4 INNER JOIN: เอาเฉพาะแถวที่ "จับคู่ได้" ทั้งสองฝั่ง
+-- ---------------------------------------------------------------------
 SELECT c.customer_code, c.name, o.order_number, o.status
 FROM customers c
 JOIN orders o ON o.customer_id = c.customer_id
-ORDER BY c.customer_id, o.ordered_at;
+ORDER BY c.customer_id, o.ordered_at;   
 
+-- ---------------------------------------------------------------------
+-- 5.5 Anti-join: "สิ่งที่ไม่มีคู่" (DE ใช้หา orphan / ข้อมูลที่ยังไม่ถูกโหลด)
+-- ---------------------------------------------------------------------
+
+
+SELECT c.customer_code, c.name                         -- ลูกค้าที่ไม่เคยสั่ง
+FROM customers c
+LEFT JOIN orders o ON o.customer_id = c.customer_id
+WHERE o.order_id IS NULL;
+
+
+SELECT c.customer_code, c.name                         -- ลูกค้าที่ไม่เคยสั่ง
+FROM customers c
+WHERE NOT EXISTS (SELECT 1 FROM orders o WHERE c.customer_id = o.customer_id)
+
+-- ---------------------------------------------------------------------
 
 -- จำนวน order ต่อลูกค้า (รวมคนที่เป็น 0)
 SELECT c.customer_code, c.name, COUNT(o.order_id) AS n_orders      -- ⚠️ COUNT(o.order_id) ไม่ใช่ COUNT(*)
@@ -144,38 +175,25 @@ LEFT JOIN orders o ON o.customer_id = c.customer_id
 GROUP BY c.customer_code, c.name
 ORDER BY n_orders DESC;
 
-SELECT c.customer_code, o.order_number
-FROM customers c 
-LEFT JOIN orders o 
-ON o.customer_id = c.customer_id 
-    AND o.status = 'completed'; 
-
--- ---------------------------------------------------------------------
--- 5.5 Anti-join: "สิ่งที่ไม่มีคู่" (DE ใช้หา orphan / ข้อมูลที่ยังไม่ถูกโหลด)
--- ---------------------------------------------------------------------
-SELECT c.customer_code, c.name                         -- ลูกค้าที่ไม่เคยสั่ง
-FROM customers c
-LEFT JOIN orders o ON o.customer_id = c.customer_id
-WHERE o.order_id IS NULL;
-
-SELECT p.sku, p.name                                   -- สินค้าที่ไม่เคยขายได้ (แบบ NOT EXISTS)
-FROM products p
-WHERE NOT EXISTS (SELECT 1 FROM order_items oi WHERE oi.product_id = p.product_id);
 
 -- ---------------------------------------------------------------------
 -- 5.6 JOIN หลายตาราง: ยอดเงินต่อ order
 -- ---------------------------------------------------------------------
-SELECT o.order_number,
-       c.name                                 AS customer,
-       o.status,
-       COUNT(*)                               AS n_lines,
-       SUM(oi.quantity)                       AS units,
-       SUM(oi.quantity * oi.unit_price)       AS order_total
-FROM orders o
-JOIN customers c    ON c.customer_id = o.customer_id
-JOIN order_items oi ON oi.order_id   = o.order_id
-GROUP BY o.order_id, o.order_number, c.name, o.status
-ORDER BY o.order_id;
+select 
+	o.order_id, 
+	o.order_number,  
+	o.ordered_at, 
+	c.name,
+	sum(oi.quantity * oi.unit_price ) AS total  
+from orders o
+left join customers c 
+on o.customer_id = c.customer_id 
+left join order_items oi 
+on o.order_id = oi.order_id 
+left join products p
+on oi.product_id = p.product_id 
+group by o.order_id, o.order_number,  o.ordered_at , c.name 
+
 
 -- ยอดขายตามหมวดสินค้า (ไม่นับ order ที่ยกเลิก)
 SELECT p.category, SUM(oi.quantity) AS units, SUM(oi.quantity * oi.unit_price) AS revenue
@@ -186,7 +204,33 @@ GROUP BY p.category
 ORDER BY revenue DESC;
 
 -- ---------------------------------------------------------------------
--- 5.7 ⚠️ Fan-out: join ตาราง "หลายแถว" สองตารางพร้อมกัน ยอดเบิ้ล!
+-- 5.7 JOIN ด้วย composite key: ต้อง join "ครบทุกคอลัมน์" ของ key
+-- ---------------------------------------------------------------------
+-- order_items มี PK = (order_id, line_number) → item_returns ต้องจับคู่ทั้ง 2 คอลัมน์
+
+select * from item_returns a
+left join order_items b
+on a.order_id = b.order_id
+	and a.line_number = b.line_number ;
+
+
+select a.return_id , a.order_id , a.line_number , p.name, p.category, a.reason    from item_returns a
+left join order_items b
+on a.order_id = b.order_id
+	and a.line_number = b.line_number 
+left join products p 
+on b.product_id = p.product_id ;
+
+
+-- ดูก่อน: แต่ละคอลัมน์ "ซ้ำได้" แต่พอรวมเป็นคู่แล้ว "ไม่ซ้ำ"
+SELECT COUNT(*)                                 AS n_rows,          -- 10
+       COUNT(DISTINCT order_id)                 AS n_order_id,      -- 7   (ซ้ำ)
+       COUNT(DISTINCT line_number)              AS n_line_number,   -- 3   (ซ้ำ)
+       COUNT(DISTINCT order_id, line_number)    AS n_pairs          -- 10  (ไม่ซ้ำ = ใช้เป็น key ได้)
+FROM order_items;
+
+-- ---------------------------------------------------------------------
+-- 5.8 ⚠️ Fan-out: join ตาราง "หลายแถว" สองตารางพร้อมกัน ยอดเบิ้ล!
 -- ---------------------------------------------------------------------
 -- order 104 มี 3 items และ 2 payments → join แล้วได้ 3 × 2 = 6 แถว
 SELECT o.order_number,
@@ -210,13 +254,6 @@ ORDER BY o.order_id;
 -- 💡 ก่อน join ถามตัวเองเสมอ: "grain" (1 แถวแทนอะไร) ของแต่ละตารางคืออะไร
 --    orders = 1 แถว/order · order_items = 1 แถว/สินค้าใน order · payments = 1 แถว/ครั้งที่จ่าย
 
--- ---------------------------------------------------------------------
--- 5.8 ON DELETE CASCADE
--- ---------------------------------------------------------------------
-SELECT COUNT(*) AS items_of_107 FROM order_items WHERE order_id = 107;
-DELETE FROM orders WHERE order_id = 107;                               -- ลบ order
-SELECT COUNT(*) AS items_of_107 FROM order_items WHERE order_id = 107; -- items ถูกลบตามอัตโนมัติ (CASCADE)
--- ⚠️ CASCADE สะดวกแต่อันตราย ลบแม่ 1 แถว ลูกหายเป็นพัน ในระบบจริงนิยม RESTRICT + soft delete
 
 -- ---------------------------------------------------------------------
 -- 5.9 UNION ALL: ต่อผลลัพธ์ "แนวตั้ง" (คอลัมน์ต้องตรงกัน)
@@ -231,6 +268,6 @@ ORDER BY ref, event DESC;
 -- UNION (ไม่มี ALL) = ตัดแถวซ้ำด้วย → ช้ากว่า ใช้เมื่อ "ต้องการ" ตัดซ้ำจริง ๆ เท่านั้น
 
 -- สรุปบทที่ 5
---   PK / FK / composite key / ON DELETE · INNER vs LEFT JOIN · เงื่อนไขใน ON vs WHERE
+--   PK / FK / composite key (และการ join หลายคอลัมน์) / ON DELETE · INNER vs LEFT JOIN · เงื่อนไขใน ON vs WHERE
 --   anti-join (LEFT JOIN ... IS NULL / NOT EXISTS) · fan-out และการ aggregate ก่อน join · UNION ALL
 --   ➡️ ทำ Assignment A3

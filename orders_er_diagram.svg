@@ -1,0 +1,135 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1800" height="1260" viewBox="0 0 1800 1260" role="img" aria-labelledby="title desc">
+  <title id="title">ER diagram อธิบาย Primary Key และ Foreign Key จาก orders_denormalized.xlsx</title>
+  <desc id="desc">ตาราง customers เชื่อมกับ orders, orders เชื่อมกับ order_items และ payments, products เชื่อมกับ order_items โดยแสดงคีย์หลัก คีย์นอก และตัวอย่างจากไฟล์</desc>
+  <defs>
+    <style>
+      text { font-family: "Leelawadee UI", Tahoma, Arial, sans-serif; fill: #183049; }
+      .title { font-size: 42px; font-weight: 700; fill: #ffffff; }
+      .subtitle { font-size: 22px; fill: #d5e5f2; }
+      .section { font-size: 25px; font-weight: 700; }
+      .card-title { font-family: Consolas, "Courier New", monospace; font-size: 28px; font-weight: 700; fill: white; }
+      .field { font-family: Consolas, "Courier New", monospace; font-size: 22px; }
+      .badge { font-family: Consolas, "Courier New", monospace; font-size: 17px; font-weight: 700; text-anchor: middle; }
+      .caption { font-size: 19px; fill: #53657a; }
+      .edge-label { font-size: 19px; font-weight: 700; fill: #35506b; text-anchor: middle; }
+      .example { font-size: 20px; }
+      .small { font-size: 18px; fill: #53657a; }
+    </style>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="130%"><feDropShadow dx="0" dy="5" stdDeviation="9" flood-color="#193552" flood-opacity="0.13"/></filter>
+    <marker id="many" markerWidth="16" markerHeight="20" refX="14" refY="10" orient="auto" markerUnits="userSpaceOnUse"><path d="M1 10 L14 2 M1 10 L14 10 M1 10 L14 18" fill="none" stroke="#476884" stroke-width="2" stroke-linecap="round"/></marker>
+    <marker id="one" markerWidth="16" markerHeight="20" refX="2" refY="10" orient="auto" markerUnits="userSpaceOnUse"><path d="M10 2 V18" fill="none" stroke="#476884" stroke-width="2" stroke-linecap="round"/></marker>
+  </defs>
+  <rect width="1800" height="1260" fill="#f4f7fb"/>
+  <rect x="0" y="0" width="1800" height="170" fill="#102a43"/>
+  <rect x="82" y="53" width="8" height="62" rx="4" fill="#4ad1c8"/>
+  <text x="111" y="92" class="title" fill="#ffffff">ER diagram: คีย์ของข้อมูลคำสั่งซื้อ</text>
+  <text x="113" y="133" class="subtitle" fill="#d5e5f2">จาก orders_denormalized.xlsx · ความสัมพันธ์แบบ 1 ต่อหลาย</text>
+
+  <rect x="90" y="194" width="1620" height="62" rx="16" fill="#e8f0f8"/>
+  <rect x="117" y="211" width="64" height="28" rx="8" fill="#dceaff"/><text x="149" y="231" class="badge" fill="#1453a4">PK</text>
+  <text x="195" y="232" class="caption">Primary key: ระบุแต่ละแถวไม่ซ้ำ</text>
+  <rect x="615" y="211" width="64" height="28" rx="8" fill="#eee7ff"/><text x="647" y="231" class="badge" fill="#6e39a5">FK</text>
+  <text x="694" y="232" class="caption">Foreign key: อ้างอิง PK ของอีกตาราง</text>
+  <rect x="1215" y="211" width="96" height="28" rx="8" fill="#e4ecee"/><text x="1263" y="231" class="badge" fill="#48616a">UNIQUE</text>
+  <text x="1327" y="232" class="caption">ค่าไม่ซ้ำ แต่ไม่ใช่ PK</text>
+
+  <!-- Relationship lines sit behind the table cards and connect the exact PK row to the FK row. -->
+  <!-- customers.customer_id → orders.customer_id -->
+  <path d="M430 365 H510 V445 H585" stroke="#476884" stroke-width="3" fill="none" marker-start="url(#one)" marker-end="url(#many)"/>
+  <rect x="442" y="318" width="135" height="27" rx="13" fill="#f4f7fb"/><text x="510" y="338" class="edge-label">1 → หลาย</text>
+  <!-- orders.order_id → order_items.order_id and payments.order_id -->
+  <path d="M940 365 H1050 V844 H1155" stroke="#476884" stroke-width="3" fill="none" marker-start="url(#one)" marker-end="url(#many)"/>
+  <path d="M1050 844 V884 H945" stroke="#476884" stroke-width="3" fill="none" marker-end="url(#many)"/>
+  <circle cx="1050" cy="844" r="5" fill="#476884"/>
+  <rect x="981" y="644" width="138" height="31" rx="15" fill="#f4f7fb"/><text x="1050" y="666" class="edge-label">1 → หลาย</text>
+  <!-- products.product_id → order_items.product_id -->
+  <path d="M1710 365 H1750 V924 H1645" stroke="#476884" stroke-width="3" fill="none" marker-start="url(#one)" marker-end="url(#many)"/>
+  <rect x="1600" y="644" width="137" height="31" rx="15" fill="#f4f7fb"/><text x="1668" y="666" class="edge-label">1 → หลาย</text>
+
+  <!-- customers -->
+  <g filter="url(#shadow)"><rect x="90" y="280" width="340" height="300" rx="18" fill="#ffffff"/><path d="M108 280 H412 Q430 280 430 298 V341 H90 V298 Q90 280 108 280" fill="#1c476e"/></g>
+  <text x="117" y="320" class="card-title">customers</text>
+  <text x="117" y="372" class="field" fill="#1453a4">customer_id</text><rect x="342" y="349" width="59" height="27" rx="7" fill="#dceaff"/><text x="371" y="369" class="badge" fill="#1453a4">PK</text>
+  <line x1="117" y1="389" x2="401" y2="389" stroke="#e8edf2"/>
+  <text x="117" y="412" class="field">customer_code</text><rect x="300" y="389" width="101" height="27" rx="7" fill="#e4ecee"/><text x="350" y="409" class="badge" fill="#48616a">UNIQUE</text>
+  <line x1="117" y1="429" x2="401" y2="429" stroke="#e8edf2"/>
+  <text x="117" y="452" class="field">name</text>
+  <line x1="117" y1="469" x2="401" y2="469" stroke="#e8edf2"/>
+  <text x="117" y="492" class="field">province</text>
+  <line x1="117" y1="509" x2="401" y2="509" stroke="#e8edf2"/>
+  <text x="117" y="532" class="field">registered_at</text>
+  <text x="117" y="562" class="small">ลูกค้าหนึ่งคนมีหลายคำสั่งซื้อ</text>
+
+  <!-- orders -->
+  <g filter="url(#shadow)"><rect x="590" y="280" width="350" height="300" rx="18" fill="#ffffff"/><path d="M608 280 H922 Q940 280 940 298 V341 H590 V298 Q590 280 608 280" fill="#1c476e"/></g>
+  <text x="617" y="320" class="card-title">orders</text>
+  <text x="617" y="372" class="field" fill="#1453a4">order_id</text><rect x="853" y="349" width="59" height="27" rx="7" fill="#dceaff"/><text x="882" y="369" class="badge" fill="#1453a4">PK</text>
+  <line x1="617" y1="389" x2="912" y2="389" stroke="#e8edf2"/>
+  <text x="617" y="412" class="field">order_number</text><rect x="811" y="389" width="101" height="27" rx="7" fill="#e4ecee"/><text x="861" y="409" class="badge" fill="#48616a">UNIQUE</text>
+  <line x1="617" y1="429" x2="912" y2="429" stroke="#e8edf2"/>
+  <text x="617" y="452" class="field" fill="#6e39a5">customer_id</text><rect x="853" y="429" width="59" height="27" rx="7" fill="#eee7ff"/><text x="882" y="449" class="badge" fill="#6e39a5">FK</text>
+  <line x1="617" y1="469" x2="912" y2="469" stroke="#e8edf2"/>
+  <text x="617" y="492" class="field">ordered_at</text>
+  <line x1="617" y1="509" x2="912" y2="509" stroke="#e8edf2"/>
+  <text x="617" y="532" class="field">status</text>
+  <text x="617" y="562" class="small">customer_id → customers.customer_id</text>
+
+  <!-- products -->
+  <g filter="url(#shadow)"><rect x="1370" y="280" width="340" height="300" rx="18" fill="#ffffff"/><path d="M1388 280 H1692 Q1710 280 1710 298 V341 H1370 V298 Q1370 280 1388 280" fill="#1c476e"/></g>
+  <text x="1397" y="320" class="card-title">products</text>
+  <text x="1397" y="372" class="field" fill="#1453a4">product_id</text><rect x="1623" y="349" width="59" height="27" rx="7" fill="#dceaff"/><text x="1652" y="369" class="badge" fill="#1453a4">PK</text>
+  <line x1="1397" y1="389" x2="1682" y2="389" stroke="#e8edf2"/>
+  <text x="1397" y="412" class="field">sku</text><rect x="1581" y="389" width="101" height="27" rx="7" fill="#e4ecee"/><text x="1631" y="409" class="badge" fill="#48616a">UNIQUE</text>
+  <line x1="1397" y1="429" x2="1682" y2="429" stroke="#e8edf2"/>
+  <text x="1397" y="452" class="field">name</text>
+  <line x1="1397" y1="469" x2="1682" y2="469" stroke="#e8edf2"/>
+  <text x="1397" y="492" class="field">category</text>
+  <line x1="1397" y1="509" x2="1682" y2="509" stroke="#e8edf2"/>
+  <text x="1397" y="532" class="field">price</text>
+  <text x="1397" y="562" class="small">สินค้าหนึ่งชิ้นอยู่ในหลายรายการ</text>
+
+  <!-- Example panel -->
+  <rect x="90" y="760" width="430" height="320" rx="18" fill="#e7f5f2" stroke="#b8e1d9" stroke-width="2"/>
+  <text x="120" y="807" class="section">ดูคีย์จากข้อมูลจริง</text>
+  <text x="120" y="853" class="example" font-weight="700">customers.customer_id = 1</text>
+  <text x="120" y="885" class="example">พบใน orders.customer_id ของ</text>
+  <text x="120" y="915" class="example">order 101, 103 และ 106</text>
+  <line x1="120" y1="940" x2="487" y2="940" stroke="#b8d9d1"/>
+  <text x="120" y="978" class="example" font-weight="700">order_items: (101, 1), (101, 2)</text>
+  <text x="120" y="1010" class="example">order_id ซ้ำได้ แต่คู่กับ</text>
+  <text x="120" y="1042" class="example">line_number แล้วไม่ซ้ำ</text>
+
+  <!-- payments -->
+  <g filter="url(#shadow)"><rect x="590" y="760" width="350" height="320" rx="18" fill="#ffffff"/><path d="M608 760 H922 Q940 760 940 778 V821 H590 V778 Q590 760 608 760" fill="#1c476e"/></g>
+  <text x="617" y="800" class="card-title">payments</text>
+  <text x="617" y="851" class="field" fill="#1453a4">payment_id</text><rect x="853" y="828" width="59" height="27" rx="7" fill="#dceaff"/><text x="882" y="848" class="badge" fill="#1453a4">PK</text>
+  <line x1="617" y1="868" x2="912" y2="868" stroke="#e8edf2"/>
+  <text x="617" y="891" class="field" fill="#6e39a5">order_id</text><rect x="853" y="868" width="59" height="27" rx="7" fill="#eee7ff"/><text x="882" y="888" class="badge" fill="#6e39a5">FK</text>
+  <line x1="617" y1="908" x2="912" y2="908" stroke="#e8edf2"/>
+  <text x="617" y="931" class="field">attempt</text>
+  <line x1="617" y1="948" x2="912" y2="948" stroke="#e8edf2"/>
+  <text x="617" y="971" class="field">method</text>
+  <line x1="617" y1="988" x2="912" y2="988" stroke="#e8edf2"/>
+  <text x="617" y="1011" class="field">amount</text>
+  <line x1="617" y1="1028" x2="912" y2="1028" stroke="#e8edf2"/>
+  <text x="617" y="1051" class="field">status</text>
+
+  <!-- order_items -->
+  <g filter="url(#shadow)"><rect x="1160" y="760" width="480" height="320" rx="18" fill="#ffffff"/><path d="M1178 760 H1622 Q1640 760 1640 778 V821 H1160 V778 Q1160 760 1178 760" fill="#1c476e"/></g>
+  <text x="1187" y="800" class="card-title">order_items</text>
+  <text x="1187" y="851" class="field" fill="#6e39a5">order_id</text><rect x="1517" y="828" width="95" height="27" rx="7" fill="#e5e9ff"/><text x="1564" y="848" class="badge" fill="#474cb6">PK + FK</text>
+  <line x1="1187" y1="868" x2="1612" y2="868" stroke="#e8edf2"/>
+  <text x="1187" y="891" class="field" fill="#1453a4">line_number</text><rect x="1553" y="868" width="59" height="27" rx="7" fill="#dceaff"/><text x="1582" y="888" class="badge" fill="#1453a4">PK</text>
+  <line x1="1187" y1="908" x2="1612" y2="908" stroke="#e8edf2"/>
+  <text x="1187" y="931" class="field" fill="#6e39a5">product_id</text><rect x="1553" y="908" width="59" height="27" rx="7" fill="#eee7ff"/><text x="1582" y="928" class="badge" fill="#6e39a5">FK</text>
+  <line x1="1187" y1="948" x2="1612" y2="948" stroke="#e8edf2"/>
+  <text x="1187" y="971" class="field">quantity</text>
+  <line x1="1187" y1="988" x2="1612" y2="988" stroke="#e8edf2"/>
+  <text x="1187" y="1011" class="field">unit_price</text>
+  <text x="1187" y="1052" class="small">PK ร่วม: (order_id, line_number)</text>
+
+  <rect x="90" y="1110" width="1620" height="104" rx="18" fill="#ffffff" stroke="#d7e2ec"/>
+  <text x="120" y="1150" class="section">อธิบายหน้าชั้นเรียน</text>
+  <text x="120" y="1187" class="example">PK ใช้ชี้แถวเดียวในตาราง  ·  FK ใช้โยงไปยังแถวในอีกตาราง  ·  คีย์เดียวกันซ้ำในตารางลูกได้</text>
+  <text x="93" y="1244" class="small">อ้างอิงชีต customers, orders, products, order_items และ payments ในไฟล์ต้นฉบับ · ภาพแสดงโครงสร้างคีย์ของตาราง ไม่ใช่ข้อบังคับที่ Excel ตรวจสอบให้</text>
+</svg>

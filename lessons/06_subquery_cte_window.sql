@@ -201,168 +201,134 @@ SELECT (SELECT COUNT(*) FROM customers) AS customers, (SELECT COUNT(*) FROM prod
        (SELECT COUNT(*) FROM payments) AS payments;
 -- ✅ ควรได้ 20 / 17 / 400 / 849 / 400
 
--- ---------------------------------------------------------------------
--- 6.1 Subquery
--- ---------------------------------------------------------------------
--- scalar subquery: ค่าเดียว ใช้เทียบได้
-SELECT order_number, total_amount
-FROM orders
-WHERE status = 'completed'
-  AND total_amount > 2 * (SELECT AVG(total_amount) FROM orders WHERE status = 'completed')
-ORDER BY total_amount DESC
-LIMIT 10;
 
--- IN (subquery): ลูกค้าที่เคยซื้อสินค้าหมวด Pet Supplies
-SELECT COUNT(*) AS pet_owners
+-- ---------------------------------------------------------------------
+-- 6.1 Subquery: query ซ้อนอยู่ข้างใน query (ข้างในรันก่อน แล้วส่งผลให้ข้างนอกใช้)
+-- ---------------------------------------------------------------------
+-- (ก) ลองรันข้างในก่อน: ราคาเฉลี่ยของสินค้า
+SELECT AVG(price) FROM products;
+
+-- แล้วเอาไปซ้อน: สินค้าที่ราคา "แพงกว่าค่าเฉลี่ย"
+SELECT product_name, price
+FROM products
+WHERE price > (SELECT AVG(price) FROM products)
+ORDER BY price DESC;
+
+-- (ข) IN (subquery): ลูกค้าที่ "เคย" สั่งซื้อ
+SELECT customer_id, name
 FROM customers
-WHERE customer_id IN (
-    SELECT o.customer_id
-    FROM orders o
-    JOIN order_items oi ON oi.order_id = o.order_id
-    JOIN products p     ON p.product_id = oi.product_id
-    JOIN categories sub ON sub.category_id = p.category_id
-    JOIN categories top ON top.category_id = sub.parent_category_id
-    WHERE top.category_code = 'PET');
+WHERE customer_id IN (SELECT customer_id FROM orders);
 
--- EXISTS: order ที่จ่ายเงินไม่ผ่านอย่างน้อย 1 ครั้ง แต่สุดท้ายจ่ายสำเร็จ
-SELECT COUNT(*) AS recovered_orders
-FROM orders o
-WHERE o.paid_at IS NOT NULL
-  AND EXISTS (SELECT 1 FROM payments p WHERE p.order_id = o.order_id AND p.status = 'failed');
+-- NOT IN: ลูกค้าที่ "ไม่เคย" สั่งซื้อเลย  → ควรได้ 2 คน (id 19, 20)
+SELECT customer_id, name
+FROM customers
+WHERE customer_id NOT IN (SELECT customer_id FROM orders);
 
 -- ---------------------------------------------------------------------
--- 6.2 CTE (WITH): แตก query ยาวเป็นขั้น ๆ อ่านง่ายเหมือน pipeline ย่อย
+-- 6.2 CTE (WITH): ตั้งชื่อให้ผลลัพธ์ชั่วคราว แล้วใช้ต่อเหมือนเป็นตาราง
+--     อ่านจากบนลงล่างได้ง่ายกว่า subquery ซ้อนกันหลายชั้น
 -- ---------------------------------------------------------------------
-WITH monthly AS (                                  -- ขั้น 1: สรุปรายเดือน
-    SELECT DATE_FORMAT(ordered_at, '%Y-%m') AS month, SUM(total_amount) AS gmv
+-- ขั้น 1: ยอดซื้อรวมของลูกค้าแต่ละคน (ตั้งชื่อว่า customer_spend)
+-- ขั้น 2: เลือกจาก customer_spend เหมือนเป็นตารางปกติ → 5 คนที่ซื้อมากที่สุด
+WITH customer_spend AS (
+    SELECT customer_id, SUM(total_amount) AS total_spend
     FROM orders
-    WHERE status <> 'cancelled'
-    GROUP BY month
-),
-ranked AS (                                        -- ขั้น 2: ใช้ผลของขั้น 1
-    SELECT month, gmv, RANK() OVER (ORDER BY gmv DESC) AS rnk
-    FROM monthly
+    WHERE status = 'completed'
+    GROUP BY customer_id
 )
-SELECT * FROM ranked WHERE rnk <= 3;               -- 3 เดือนที่ขายดีที่สุด
+SELECT *
+FROM customer_spend
+ORDER BY total_spend DESC
+LIMIT 5;
 
 -- ---------------------------------------------------------------------
--- 6.3 Window function: คำนวณ "ข้ามแถว" โดยไม่ยุบแถวแบบ GROUP BY
---     รูปแบบ: FUNC() OVER (PARTITION BY ... ORDER BY ... [ROWS ...])
+-- 6.3 Window function: คำนวณ "ข้ามแถว" แต่ไม่ยุบแถว (ต่างจาก GROUP BY)
+--     รูปแบบ: ฟังก์ชัน() OVER (PARTITION BY แบ่งกลุ่ม  ORDER BY เรียงลำดับ)
 -- ---------------------------------------------------------------------
--- (ก) % ของทั้งหมด: SUM() OVER () = ผลรวมทั้งตาราง
-SELECT payment_method, COUNT(*) AS n,
-       ROUND(100 * COUNT(*) / SUM(COUNT(*)) OVER (), 1) AS pct
-FROM orders
-GROUP BY payment_method;
+-- (ก) เทียบ GROUP BY กับ window
+--     GROUP BY: 17 สินค้า เหลือ 1 แถว
+SELECT AVG(price) AS avg_price FROM products;
 
--- (ข) LAG: เทียบกับแถวก่อนหน้า → การเติบโตเดือนต่อเดือน (MoM)
+--     window: ยังได้ครบ 17 แถว + มีค่าเฉลี่ยแปะไว้ทุกแถว
+SELECT product_name, price,
+       AVG(price) OVER () AS avg_price
+FROM products;
+
+-- (ข) ROW_NUMBER: ใส่เลขลำดับ 1, 2, 3, ...
+SELECT product_name, price,
+       ROW_NUMBER() OVER (ORDER BY price DESC) AS rn
+FROM products;
+
+-- (ค) PARTITION BY: เริ่มนับ 1 ใหม่ในแต่ละกลุ่ม (ที่นี่ = แต่ละหมวด)
+SELECT category_id, product_name, price,
+       ROW_NUMBER() OVER (PARTITION BY category_id ORDER BY price DESC) AS rn
+FROM products
+ORDER BY category_id, rn;
+
+-- ⭐ pattern ที่ DE ใช้บ่อยมาก: เอา "อันดับ 1 ของแต่ละกลุ่ม"
+--    สินค้าที่แพงที่สุดของแต่ละหมวด (WHERE ใช้กับ window ตรง ๆ ไม่ได้ → ห่อด้วย CTE ก่อน)
+WITH ranked AS (
+    SELECT category_id, product_name, price,
+           ROW_NUMBER() OVER (PARTITION BY category_id ORDER BY price DESC) AS rn
+    FROM products
+)
+SELECT category_id, product_name, price
+FROM ranked
+WHERE rn = 1;
+
+-- (ง) ROW_NUMBER vs RANK vs DENSE_RANK: ต่างกันตอน "ค่าเท่ากัน"
+WITH order_count AS (
+    SELECT customer_id, COUNT(*) AS n_orders
+    FROM orders
+    GROUP BY customer_id
+)
+SELECT customer_id, n_orders,
+       ROW_NUMBER() OVER (ORDER BY n_orders DESC) AS row_num,      -- 1,2,3,4 (ไม่มีเสมอ)
+       RANK()       OVER (ORDER BY n_orders DESC) AS rnk,          -- 1,2,2,4 (เสมอแล้วข้ามเลข)
+       DENSE_RANK() OVER (ORDER BY n_orders DESC) AS dense_rnk     -- 1,2,2,3 (เสมอแต่ไม่ข้าม)
+FROM order_count;
+
+-- (จ) LAG + ยอดสะสม: จำนวน order รายเดือน เทียบกับเดือนก่อน
 WITH monthly AS (
-    SELECT DATE_FORMAT(ordered_at, '%Y-%m') AS month, SUM(total_amount) AS gmv
-    FROM orders WHERE status <> 'cancelled' GROUP BY month
+    SELECT DATE_FORMAT(ordered_at, '%Y-%m') AS month, COUNT(*) AS n_orders
+    FROM orders
+    GROUP BY month
 )
-SELECT month, gmv,
-       LAG(gmv) OVER (ORDER BY month)                                  AS prev_gmv,
-       ROUND(100 * (gmv / LAG(gmv) OVER (ORDER BY month) - 1), 1)      AS mom_growth_pct,
-       SUM(gmv) OVER (ORDER BY month)                                  AS running_gmv     -- ยอดสะสม
+SELECT month, n_orders,
+       LAG(n_orders) OVER (ORDER BY month) AS prev_month,          -- ค่าของแถวก่อนหน้า
+       SUM(n_orders) OVER (ORDER BY month) AS running_total        -- รวมสะสมตั้งแต่เดือนแรก
 FROM monthly
 ORDER BY month;
 
--- (ค) Moving average 7 วัน (ลด noise ของยอดรายวัน)
-WITH daily AS (
-    SELECT DATE(ordered_at) AS d, COUNT(*) AS orders
-    FROM orders WHERE ordered_at >= '2026-06-01' GROUP BY d
-)
-SELECT d, orders,
-       ROUND(AVG(orders) OVER (ORDER BY d ROWS BETWEEN 6 PRECEDING AND CURRENT ROW), 1) AS ma_7d
-FROM daily
-ORDER BY d;
-
--- (ง) ROW_NUMBER: "เอาแถวล่าสุดของแต่ละกลุ่ม" ⭐ pattern ที่ DE ใช้บ่อยที่สุด (dedup)
---     order ล่าสุดของลูกค้าแต่ละคน
-WITH ranked AS (
-    SELECT customer_id, order_number, ordered_at, total_amount,
-           ROW_NUMBER() OVER (PARTITION BY customer_id ORDER BY ordered_at DESC, order_id DESC) AS rn
-    FROM orders
-)
-SELECT customer_id, order_number, ordered_at, total_amount
-FROM ranked
-WHERE rn = 1
-ORDER BY customer_id
-LIMIT 20;
-
--- (จ) RANK / DENSE_RANK: top 3 สินค้าขายดีในแต่ละหมวดหลัก
-WITH product_sales AS (
-    SELECT top.name_en AS category, p.sku, p.product_name, SUM(oi.line_total) AS revenue
-    FROM order_items oi
-    JOIN orders o       ON o.order_id = oi.order_id AND o.status <> 'cancelled'
-    JOIN products p     ON p.product_id = oi.product_id
-    JOIN categories sub ON sub.category_id = p.category_id
-    JOIN categories top ON top.category_id = sub.parent_category_id
-    GROUP BY top.name_en, p.product_id, p.sku, p.product_name
-),
-ranked AS (
-    SELECT *, DENSE_RANK() OVER (PARTITION BY category ORDER BY revenue DESC) AS rnk
-    FROM product_sales
-)
-SELECT category, rnk, sku, product_name, revenue
-FROM ranked WHERE rnk <= 3
-ORDER BY category, rnk;
---   ROW_NUMBER = 1,2,3,4 (ไม่มีเสมอ) · RANK = 1,2,2,4 · DENSE_RANK = 1,2,2,3
-
--- (ฉ) LAG ภายในกลุ่ม: ลูกค้ากลับมาซื้อซ้ำห่างกันกี่วัน
-WITH gaps AS (
-    SELECT customer_id, ordered_at,
-           DATEDIFF(ordered_at, LAG(ordered_at) OVER (PARTITION BY customer_id ORDER BY ordered_at)) AS days_since_prev
-    FROM orders
-    WHERE status <> 'cancelled'
-)
-SELECT CASE WHEN days_since_prev <= 3 THEN '1) ≤ 3 วัน'
-            WHEN days_since_prev <= 7 THEN '2) 4-7 วัน'
-            WHEN days_since_prev <= 14 THEN '3) 8-14 วัน'
-            ELSE '4) > 14 วัน' END AS gap_bucket,
-       COUNT(*) AS repeat_orders
-FROM gaps
-WHERE days_since_prev IS NOT NULL                   -- order แรกของลูกค้าไม่มีแถวก่อนหน้า
-GROUP BY gap_bucket
-ORDER BY gap_bucket;
-
--- (ช) NTILE: แบ่งลูกค้าเป็น 4 กลุ่มตามยอดซื้อ (quartile)
-WITH spend AS (
-    SELECT customer_id, SUM(total_amount) AS total_spend
-    FROM orders WHERE status = 'completed' GROUP BY customer_id
-)
-SELECT quartile, COUNT(*) AS customers, MIN(total_spend) AS min_spend, MAX(total_spend) AS max_spend,
-       ROUND(SUM(total_spend) / (SELECT SUM(total_spend) FROM spend) * 100, 1) AS pct_of_revenue
-FROM (SELECT customer_id, total_spend, NTILE(4) OVER (ORDER BY total_spend DESC) AS quartile FROM spend) q
-GROUP BY quartile
-ORDER BY quartile;
-
 -- ---------------------------------------------------------------------
--- 6.4 Recursive CTE: สร้าง "date spine" (ตารางวันที่ต่อเนื่อง) เติมวันที่ไม่มีข้อมูล
+-- 6.4 Recursive CTE: CTE ที่เรียกตัวเองซ้ำ ๆ ใช้ "สร้างแถว" ขึ้นมาเอง
 -- ---------------------------------------------------------------------
--- ปัญหา: GROUP BY วันที่ จะ "ไม่มีแถว" ในวันที่ขายไม่ได้เลย → กราฟ/ค่าเฉลี่ยผิด
-SET @sku = (SELECT sku FROM products WHERE status = 'active' ORDER BY product_id DESC LIMIT 1);
+-- (ก) นับ 1 ถึง 5
+WITH RECURSIVE nums AS (
+    SELECT 1 AS n                                -- จุดเริ่มต้น
+    UNION ALL
+    SELECT n + 1 FROM nums WHERE n < 5           -- บวกทีละ 1 จนถึง 5 แล้วหยุด
+)
+SELECT n FROM nums;
 
+-- (ข) ใช้จริง: สร้างวันที่ 1–10 ส.ค. ให้ครบทุกวัน แล้ว LEFT JOIN กับยอด order
+--     วันที่ไม่มี order จะยังมีแถว (ค่า 0) ไม่หายไปจากกราฟ
 WITH RECURSIVE days AS (
     SELECT DATE('2026-08-01') AS d
     UNION ALL
-    SELECT d + INTERVAL 1 DAY FROM days WHERE d < '2026-08-31'
-),
-sold AS (
-    SELECT DATE(o.ordered_at) AS d, SUM(oi.quantity) AS units
-    FROM order_items oi
-    JOIN orders o   ON o.order_id = oi.order_id
-    JOIN products p ON p.product_id = oi.product_id
-    WHERE p.sku = @sku AND o.ordered_at >= '2026-08-01' AND o.ordered_at < '2026-09-01'
-    GROUP BY DATE(o.ordered_at)
+    SELECT d + INTERVAL 1 DAY FROM days WHERE d < '2026-08-10'
 )
-SELECT days.d, COALESCE(sold.units, 0) AS units       -- วันที่ขายไม่ได้ = 0 (ไม่หายไป)
-FROM days LEFT JOIN sold ON sold.d = days.d
+SELECT days.d, COUNT(o.order_id) AS n_orders
+FROM days
+LEFT JOIN orders o ON DATE(o.ordered_at) = days.d
+GROUP BY days.d
 ORDER BY days.d;
 
 -- สรุปบทที่ 6
---   subquery (scalar / IN / EXISTS) · CTE · window: SUM() OVER, LAG, moving average,
---   ROW_NUMBER (dedup/latest) ⭐, RANK/DENSE_RANK, NTILE · recursive CTE date spine
+--   subquery: query ซ้อน (ค่าเดียว / IN / NOT IN)
+--   CTE: WITH ชื่อ AS (...) ตั้งชื่อผลลัพธ์ชั่วคราว
+--   window: OVER (), ROW_NUMBER ⭐, PARTITION BY, RANK / DENSE_RANK, LAG, ยอดสะสม
+--   recursive CTE: สร้างแถวเอง เช่น ตารางวันที่ครบทุกวัน
 --   🎓 จบเนื้อหาในคลาส
 --   📖 ศึกษาต่อเอง: บทที่ 7 (สำรวจข้อมูลจริง ecommerce) · 8 (load patterns) · 9 (modeling / quality / performance)
 --      และลองทำ Assignment A4 (ใช้ความรู้บทที่ 6 กับข้อมูล ecommerce) หลังอ่านบทที่ 7
