@@ -92,8 +92,13 @@ SELECT sku, SUM(qty) AS units
 FROM sales
 WHERE category = 'coffee'          -- เอาเฉพาะกาแฟก่อน
 GROUP BY sku
-HAVING SUM(qty) >= 5               -- แล้วเอาเฉพาะ sku ที่ขายรวม >= 5 แก้ว
+HAVING units >= 5               -- แล้วเอาเฉพาะ sku ที่ขายรวม >= 5 แก้ว
 ORDER BY units DESC;
+
+
+select sale_id, count(*) from sales
+group by sale_id
+having count(*) > 1
 
 -- 💡 ลำดับการทำงานจริงของ SQL (ไม่ใช่ลำดับที่เขียน)
 --    FROM → WHERE → GROUP BY → HAVING → SELECT → DISTINCT → ORDER BY → LIMIT

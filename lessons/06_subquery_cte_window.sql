@@ -300,35 +300,10 @@ SELECT month, n_orders,
 FROM monthly
 ORDER BY month;
 
--- ---------------------------------------------------------------------
--- 6.4 Recursive CTE: CTE ที่เรียกตัวเองซ้ำ ๆ ใช้ "สร้างแถว" ขึ้นมาเอง
--- ---------------------------------------------------------------------
--- (ก) นับ 1 ถึง 5
-WITH RECURSIVE nums AS (
-    SELECT 1 AS n                                -- จุดเริ่มต้น
-    UNION ALL
-    SELECT n + 1 FROM nums WHERE n < 5           -- บวกทีละ 1 จนถึง 5 แล้วหยุด
-)
-SELECT n FROM nums;
-
--- (ข) ใช้จริง: สร้างวันที่ 1–10 ส.ค. ให้ครบทุกวัน แล้ว LEFT JOIN กับยอด order
---     วันที่ไม่มี order จะยังมีแถว (ค่า 0) ไม่หายไปจากกราฟ
-WITH RECURSIVE days AS (
-    SELECT DATE('2026-08-01') AS d
-    UNION ALL
-    SELECT d + INTERVAL 1 DAY FROM days WHERE d < '2026-08-10'
-)
-SELECT days.d, COUNT(o.order_id) AS n_orders
-FROM days
-LEFT JOIN orders o ON DATE(o.ordered_at) = days.d
-GROUP BY days.d
-ORDER BY days.d;
-
 -- สรุปบทที่ 6
 --   subquery: query ซ้อน (ค่าเดียว / IN / NOT IN)
 --   CTE: WITH ชื่อ AS (...) ตั้งชื่อผลลัพธ์ชั่วคราว
 --   window: OVER (), ROW_NUMBER ⭐, PARTITION BY, RANK / DENSE_RANK, LAG, ยอดสะสม
---   recursive CTE: สร้างแถวเอง เช่น ตารางวันที่ครบทุกวัน
 --   🎓 จบเนื้อหาในคลาส
 --   📖 ศึกษาต่อเอง: บทที่ 7 (สำรวจข้อมูลจริง ecommerce) · 8 (load patterns) · 9 (modeling / quality / performance)
 --      และลองทำ Assignment A4 (ใช้ความรู้บทที่ 6 กับข้อมูล ecommerce) หลังอ่านบทที่ 7
